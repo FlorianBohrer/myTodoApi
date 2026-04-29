@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Filter, Todo } from './todo.model';
+import { CreateTodoDto } from './dto/create-todo.dto';
 
 @Injectable()
 export class TodoService {
@@ -11,4 +12,16 @@ export class TodoService {
         if (filter === 'completed') items = items.filter((item) => item.completed);
         return items;
     }
+
+    createTodo(createTodoDto: CreateTodoDto): Todo {
+        const todo =  Todo = {
+            id: crypto.randomUUID(),
+            title: createTodoDto.title,
+            completed: false,
+            createdAt: new Date(),
+        };
+        this.todo.push(todo);
+        return todo;
+    }
+      
 }

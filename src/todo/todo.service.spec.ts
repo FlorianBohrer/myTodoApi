@@ -10,23 +10,15 @@ describe('TodoService', () => {
     }).compile();
 
     service = module.get<TodoService>(TodoService);
-    (service as any).todo = [
-      {
-        id: '1', title: 'Test Todo 1',completed: false,
-      },
-      {
-        id: '2', title: 'Test Todo 2',completed: true,
-      },
-      {
-        id: '3', title: 'Test Todo 3',completed: false,
-      }
-    ];
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
-  it('should return all todos with filter "all"', () => {
+  it('should return all todos with filter = "all"', () => {
+    service.createTodo({ title: 'Todo 1' });  
+    service.createTodo({ title: 'Todo 2' });
+    service.createTodo({ title: 'Todo 3' });
     const result = service.findAll('all');
     expect(result.length).toBe(3);
   }
