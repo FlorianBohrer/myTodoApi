@@ -1,7 +1,7 @@
-import { Min, MinLength } from "class-validator";
+import { IsString, MinLength } from "class-validator";
 
 export class CreateTodoDto {
-    @isString()
+    @IsString()
     @MinLength(1)
-    title: string;
+    title!: string;
 }
