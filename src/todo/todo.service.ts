@@ -34,7 +34,7 @@ export class TodoService {
     updateTodo(id: string, updateTodoDto: UpdateTodoDto): Todo {
         let updatedTodo: Todo | undefined;
         this.todo = this.todo.map((t) => {
-            if (t.id !== id) return t; // <-- war: t.id === id (falsch!)
+            if (t.id !== id) return t;
             updatedTodo = { ...t, ...updateTodoDto };
             return updatedTodo;
         });
