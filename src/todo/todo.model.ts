@@ -1,10 +1,5 @@
-export interface Todo {
-  id: string;
-  title: string;
-  userId: string;
-  completed: boolean;
-  createdAt: Date;
-}
+// quelle für todo ist jetzt das drizzle/drizzle.module.ts und drizzle/schema.ts
+
 
 export type Filter = 'all' | 'active' | 'completed';
 

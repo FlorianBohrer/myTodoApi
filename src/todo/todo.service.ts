@@ -1,45 +1,67 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Filter, Todo } from './todo.model';
+// src/todo/todo.service.ts
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { and, eq } from 'drizzle-orm';
+import { DRIZZLE } from '../drizzle/drizzle.module';
+import type { DrizzleDB } from '../drizzle/drizzle.module';
+import { todos, Todo } from '../drizzle/schema';
+import { Filter } from './todo.model';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 
 @Injectable()
 export class TodoService {
-  private todos: Todo[] = [];
+  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
+  async findAll(userId: string, filter: Filter): Promise<Todo[]> {
+    const items = await this.db
+      .select()
+      .from(todos)
+      .where(eq(todos.userId, userId));
 
-  findAll(userId: string, filter: Filter): Todo[] {
-    let items = this.todos.filter((t) => t.userId === userId);
-    if (filter === 'active') items = items.filter((t) => !t.completed);
-    if (filter === 'completed') items = items.filter((t) => t.completed);
+    if (filter === 'active') return items.filter((t) => !t.completed);
+    if (filter === 'completed') return items.filter((t) => t.completed);
     return items;
   }
 
-  findById(userId: string, id: string): Todo {
-    const todo = this.todos.find((t) => t.id === id && t.userId === userId);
+  async findById(userId: string, id: string): Promise<Todo> {
+    const [todo] = await this.db
+      .select()
+      .from(todos)
+      .where(and(eq(todos.id, id), eq(todos.userId, userId)));
+
     if (!todo) throw new NotFoundException('Todo not found');
     return todo;
   }
 
-  createTodo(userId: string, createTodoDto: CreateTodoDto): Todo {
-    const todo: Todo = {
-      id: crypto.randomUUID(),
-      userId,
-      title: createTodoDto.title,
-      completed: false,
-      createdAt: new Date(),
-    };
-    this.todos.push(todo);
+  async createTodo(userId: string, dto: CreateTodoDto): Promise<Todo> {
+    const [todo] = await this.db
+      .insert(todos)
+      .values({ userId, title: dto.title })
+      .returning();
+
     return todo;
   }
 
-  updateTodo(userId: string, id: string, updateTodoDto: UpdateTodoDto): Todo {
-    const todo = this.findById(userId, id);
-    Object.assign(todo, updateTodoDto);
+  async updateTodo(
+    userId: string,
+    id: string,
+    dto: UpdateTodoDto,
+  ): Promise<Todo> {
+    const [todo] = await this.db
+      .update(todos)
+      .set(dto)
+      .where(and(eq(todos.id, id), eq(todos.userId, userId)))
+      .returning();
+
+    if (!todo) throw new NotFoundException('Todo not found');
     return todo;
   }
 
-  deleteTodo(userId: string, id: string): void {
-    this.findById(userId, id);
-    this.todos = this.todos.filter((t) => t.id !== id);
+  async deleteTodo(userId: string, id: string): Promise<void> {
+    const [todo] = await this.db
+      .delete(todos)
+      .where(and(eq(todos.id, id), eq(todos.userId, userId)))
+      .returning();
+
+    if (!todo) throw new NotFoundException('Todo not found');
   }
 }

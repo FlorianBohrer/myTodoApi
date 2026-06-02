@@ -1,4 +1,4 @@
-import { Todo } from "../todo.model";
+import { Todo } from "../../drizzle/schema";
 
 export class TodoResponseDto { 
     todo: Todo[];
