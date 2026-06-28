@@ -8,6 +8,13 @@
       "when": 1780407517484,
       "tag": "0000_mature_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782647696733,
+      "tag": "0001_melted_norman_osborn",
+      "breakpoints": true
     }
   ]
 }
