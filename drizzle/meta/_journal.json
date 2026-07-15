@@ -36,6 +36,13 @@
       "when": 1784150509340,
       "tag": "0004_grey_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784151276636,
+      "tag": "0005_careless_cable",
+      "breakpoints": true
     }
   ]
 }

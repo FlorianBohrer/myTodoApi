@@ -27,6 +27,7 @@ export const categories = pgTable(
     name: text('name').notNull(),
     color: text('color').notNull(),
     icon: text('icon').notNull().default('tag'),
+    isFavorite: boolean('is_favorite').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [index('category_user_id_idx').on(table.userId)],
