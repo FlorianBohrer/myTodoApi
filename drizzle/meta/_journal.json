@@ -15,6 +15,13 @@
       "when": 1782647696733,
       "tag": "0001_melted_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784111268089,
+      "tag": "0002_salty_clea",
+      "breakpoints": true
     }
   ]
 }

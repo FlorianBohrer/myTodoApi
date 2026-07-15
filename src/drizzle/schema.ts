@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, boolean, integer, timestamp, index } from 'drizzle-orm/pg-core';
 
 export const todos = pgTable(
   'todos',
@@ -7,6 +7,10 @@ export const todos = pgTable(
     userId: text('user_id').notNull(),
     title: text('title').notNull(),
     completed: boolean('completed').notNull().default(false),
+    categoryId: uuid('category_id').references(() => categories.id, {
+      onDelete: 'set null',
+    }),
+    position: integer('position').notNull().default(0),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [index('todo_user_id_idx').on(table.userId)],

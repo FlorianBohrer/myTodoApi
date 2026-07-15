@@ -15,6 +15,7 @@ import type { Todo } from '../drizzle/schema';
 import { TodoResponseDto } from './dto/todo-response.dto';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
+import { ReorderTodosDto } from './dto/reorder-todos.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
 
 @Controller('todo')
@@ -28,6 +29,15 @@ export class TodoController {
   ): Promise<TodoResponseDto> {
     const items = await this.todoService.findAll(userId, filter);
     return new TodoResponseDto(items);
+  }
+
+  // Muss vor den ':id'-Routen stehen, sonst wird 'reorder' als id interpretiert.
+  @Put('reorder')
+  reorderTodos(
+    @CurrentUserId() userId: string,
+    @Body() reorderTodosDto: ReorderTodosDto,
+  ): Promise<void> {
+    return this.todoService.reorder(userId, reorderTodosDto.ids);
   }
 
   @Get(':id')

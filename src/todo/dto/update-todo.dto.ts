@@ -1,4 +1,4 @@
-import { IsOptional, IsString ,IsBoolean ,MinLength } from "class-validator";
+import { IsOptional, IsString ,IsBoolean ,IsUUID ,MinLength } from "class-validator";
 
 export class UpdateTodoDto {
     @IsOptional()
@@ -7,6 +7,10 @@ export class UpdateTodoDto {
     title?: string;
 
     @IsOptional()
-    @IsBoolean()    
+    @IsBoolean()
     completed?: boolean;
+
+    @IsOptional()
+    @IsUUID()
+    categoryId?: string | null;
 }

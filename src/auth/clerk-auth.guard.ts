@@ -38,17 +38,28 @@ export class ClerkAuthGuard implements CanActivate {
 
     const token = authHeader.slice('Bearer '.length);
 
+    const secretKey = this.config.get<string>('CLERK_SECRET_KEY');
+    const parties = this.config
+      .get<string>('CLERK_AUTHORIZED_PARTIES')
+      ?.split(',')
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+
+    // DEBUG: zeigt, womit verifiziert wird (Key wird maskiert).
+    console.log('[guard] secretKey vorhanden?', !!secretKey, '| prefix:', secretKey?.slice(0, 8));
+    console.log('[guard] authorizedParties:', parties);
+
     try {
       const payload = await verifyToken(token, {
-        secretKey: this.config.get<string>('CLERK_SECRET_KEY'),
-        authorizedParties: this.config
-          .get<string>('CLERK_AUTHORIZED_PARTIES')
-          ?.split(','),
+        secretKey,
+        authorizedParties: parties && parties.length > 0 ? parties : undefined,
       });
 
       request.auth = { userId: payload.sub };
       return true;
-    } catch {
+    } catch (err) {
+      // DEBUG: echter Grund im Terminal
+      console.error('[guard] verifyToken FEHLER:', (err as Error).message);
       throw new UnauthorizedException('Token ungültig oder abgelaufen');
     }
   }

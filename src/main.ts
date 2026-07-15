@@ -4,12 +4,14 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe());
+  // whitelist: unbekannte Felder aus Requests entfernen (Schutz, weil DTOs
+  // direkt in DB-Updates fließen).
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  // CORS: Frontend-Origins, die das Backend aufrufen dürfen.
-  // Später hier die Vercel-URL ergänzen.
+  // Lokale Entwicklung: alle localhost-Ports erlauben.
+  // Beim Deployment hier die feste Vercel-URL eintragen.
   app.enableCors({
-    origin: ['http://localhost:4200'],
+    origin: /^http:\/\/localhost:\d+$/,
   });
 
   await app.listen(process.env.PORT ?? 3000);
