@@ -1,98 +1,34 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# myTodoApi
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Das NestJS-Backend zu meiner [Todo-App](https://github.com/FlorianBohrer/Todo_App). Speichert Todos und Kategorien pro Nutzer in einer Neon-Postgres-Datenbank (Drizzle ORM). Der Login läuft über Clerk: Ein globaler Guard prüft bei jedem Request das mitgeschickte Session-Token und filtert alle Abfragen auf den eingeloggten Nutzer.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Die Hintergründe und was ich beim Bauen gelernt habe, stehen in der [README des Frontends](https://github.com/FlorianBohrer/Todo_App#was-ich-dabei-gelernt-habe).
 
-## Description
+## Endpunkte
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Methode | Pfad | Zweck |
+| --- | --- | --- |
+| GET | `/todo` | Alle Todos des Nutzers, sortiert |
+| GET | `/todo/:id` | Ein einzelnes Todo |
+| POST | `/todo` | Todo anlegen |
+| PUT | `/todo/reorder` | Reihenfolge nach Drag & Drop speichern |
+| PUT | `/todo/:id` | Todo ändern (Titel, erledigt, Kategorie) |
+| DELETE | `/todo/:id` | Todo löschen |
+| GET | `/category` | Kategorien des Nutzers |
+| POST | `/category` | Kategorie anlegen |
+| PUT | `/category/:id` | Kategorie ändern |
+| DELETE | `/category/:id` | Kategorie löschen |
 
-## Project setup
+Alle Endpunkte erwarten einen `Authorization: Bearer`-Header mit einem gültigen Clerk-Token, sonst gibt es eine 401.
+
+## Starten
 
 ```bash
-$ npm install
+npm install
+npm run db:migrate
+npm run start:dev
 ```
 
-## Compile and run the project
+Vorher eine `.env` im Projektordner anlegen mit `DATABASE_URL` (Connection-URL aus der Neon-Konsole), `CLERK_SECRET_KEY` (Clerk-Dashboard, API Keys) und `CLERK_AUTHORIZED_PARTIES` (darf leer bleiben). Die API läuft danach auf Port 3000.
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Schema-Änderungen: In `src/drizzle/schema.ts` anpassen, dann `npm run db:generate` für eine neue Migration und `npm run db:migrate` zum Einspielen. `npm run db:studio` öffnet einen Blick in die Datenbank.
