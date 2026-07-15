@@ -45,10 +45,6 @@ export class ClerkAuthGuard implements CanActivate {
       .map((p) => p.trim())
       .filter((p) => p.length > 0);
 
-    // DEBUG: zeigt, womit verifiziert wird (Key wird maskiert).
-    console.log('[guard] secretKey vorhanden?', !!secretKey, '| prefix:', secretKey?.slice(0, 8));
-    console.log('[guard] authorizedParties:', parties);
-
     try {
       const payload = await verifyToken(token, {
         secretKey,
@@ -57,9 +53,7 @@ export class ClerkAuthGuard implements CanActivate {
 
       request.auth = { userId: payload.sub };
       return true;
-    } catch (err) {
-      // DEBUG: echter Grund im Terminal
-      console.error('[guard] verifyToken FEHLER:', (err as Error).message);
+    } catch {
       throw new UnauthorizedException('Token ungültig oder abgelaufen');
     }
   }
