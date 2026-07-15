@@ -13,4 +13,8 @@ export class UpdateTodoDto {
     @IsOptional()
     @IsUUID()
     categoryId?: string | null;
+
+    @IsOptional()
+    @IsBoolean()
+    isFavorite?: boolean;
 }

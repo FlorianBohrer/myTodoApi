@@ -7,6 +7,9 @@ export const todos = pgTable(
     userId: text('user_id').notNull(),
     title: text('title').notNull(),
     completed: boolean('completed').notNull().default(false),
+
+    isFavorite: boolean('is_favorite').notNull().default(false),
+
     categoryId: uuid('category_id').references(() => categories.id, {
       onDelete: 'set null',
     }),

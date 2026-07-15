@@ -3,3 +3,11 @@
 
 export type Filter = 'all' | 'active' | 'completed';
 
+export interface Todo {
+  id: string;
+  title: string;
+  completed: boolean;
+  isFavorite: boolean;
+  labelId: string | null;
+  createdAt: Date;
+}
