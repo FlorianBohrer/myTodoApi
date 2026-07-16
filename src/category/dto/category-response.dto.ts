@@ -1,10 +1,10 @@
-import { Category } from '../../drizzle/schema';
+import { CategoryItemResponseDto } from './category-item-response.dto';
 
 export class CategoryResponseDto {
-  categories: Category[];
-  total: number;
+  readonly categories: CategoryItemResponseDto[];
+  readonly total: number;
 
-  constructor(categories: Category[]) {
+  constructor(categories: CategoryItemResponseDto[]) {
     this.categories = categories;
     this.total = categories.length;
   }

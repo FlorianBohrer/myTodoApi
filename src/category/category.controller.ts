@@ -9,59 +9,85 @@ import {
   Put,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
-import type { Category } from '../drizzle/schema';
 import { CategoryResponseDto } from './dto/category-response.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { SetCategoryFavoriteDto } from './dto/set-category-favorite.dto';
+import { toCategoryItemResponse } from './dto/category.mapper';
+import { CategoryItemResponseDto } from './dto/category-item-response.dto';
+
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  @Get()
-  async getAllCategories(
-    @CurrentUserId() userId: string,
-  ): Promise<CategoryResponseDto> {
-    const items = await this.categoryService.findAll(userId);
-    return new CategoryResponseDto(items);
-  }
+ @Get()
+async getAllCategories(
+  @CurrentUserId() userId: string,
+): Promise<CategoryResponseDto> {
+  const categories =
+    await this.categoryService.findAll(userId);
 
-  @Post()
-  createCategory(
-    @CurrentUserId() userId: string,
-    @Body() dto: CreateCategoryDto,
-  ): Promise<Category> {
-    return this.categoryService.createCategory(userId, dto);
-  }
+  return new CategoryResponseDto(
+    categories.map(toCategoryItemResponse),
+  );
+}
 
-  @Put(':id')
-  updateCategory(
-    @CurrentUserId() userId: string,
-    @Param('id') id: string,
-    @Body() dto: UpdateCategoryDto,
-  ): Promise<Category> {
-    return this.categoryService.updateCategory(userId, id, dto);
-  }
+@Post()
+async createCategory(
+  @CurrentUserId() userId: string,
+  @Body() dto: CreateCategoryDto,
+): Promise<CategoryItemResponseDto> {
+  const category =
+    await this.categoryService.createCategory(
+      userId,
+      dto,
+    );
 
-  @Delete(':id')
-  deleteCategory(
-    @CurrentUserId() userId: string,
-    @Param('id') id: string,
-  ): Promise<void> {
-    return this.categoryService.deleteCategory(userId, id);
-  }
+  return toCategoryItemResponse(category);
+}
 
-  @Patch(':id/favorite')
-setFavorite(
+@Put(':id')
+async updateCategory(
+  @CurrentUserId() userId: string,
+  @Param('id') id: string,
+  @Body() dto: UpdateCategoryDto,
+): Promise<CategoryItemResponseDto> {
+  const category =
+    await this.categoryService.updateCategory(
+      userId,
+      id,
+      dto,
+    );
+
+  return toCategoryItemResponse(category);
+}
+
+@Delete(':id')
+deleteCategory(
+  @CurrentUserId() userId: string,
+  @Param('id') id: string,
+): Promise<void> {
+  return this.categoryService.deleteCategory(
+    userId,
+    id,
+  );
+}
+
+ 
+@Patch(':id/favorite')
+async setFavorite(
   @CurrentUserId() userId: string,
   @Param('id') id: string,
   @Body() dto: SetCategoryFavoriteDto,
-): Promise<Category> {
-  return this.categoryService.setFavorite(
-    userId,
-    id,
-    dto.favorite,
-  );
+): Promise<CategoryItemResponseDto> {
+  const category =
+    await this.categoryService.setFavorite(
+      userId,
+      id,
+      dto.favorite,
+    );
+
+  return toCategoryItemResponse(category);
 }
 }
