@@ -8,10 +8,9 @@ async function bootstrap() {
   // direkt in DB-Updates fließen).
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  // Lokale Entwicklung: alle localhost-Ports erlauben.
-  // Beim Deployment hier die feste Vercel-URL eintragen.
+  // Lokale Entwicklung (alle localhost-Ports) + die Live-Domain.
   app.enableCors({
-    origin: /^http:\/\/localhost:\d+$/,
+    origin: [/^http:\/\/localhost:\d+$/, 'https://my-todo.app'],
   });
 
   await app.listen(process.env.PORT ?? 3000);
