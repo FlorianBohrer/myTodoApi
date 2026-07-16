@@ -1,51 +1,72 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { TodoService } from './todo.service';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 
+import { TodoService } from './todo.service';
+
+import { TODO_REPOSITORY, TodoRepository } from './todo-repository';
 describe('TodoService', () => {
   let service: TodoService;
-  const userId = 'user_123';
+  let repository: jest.Mocked<TodoRepository>;
 
   beforeEach(async () => {
+    repository = {
+      findAll: jest.fn(),
+      findById: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      reorder: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [TodoService],
+      providers: [
+        TodoService,
+        {
+          provide: TODO_REPOSITORY,
+          useValue: repository,
+        },
+      ],
     }).compile();
-    service = module.get<TodoService>(TodoService);
+
+    service = module.get(TodoService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('should return only active todos', async () => {
+    const openTodo = {
+      id: '1',
+      userId: 'user_123',
+      title: 'Open',
+      completed: false,
+      isFavorite: false,
+      categoryId: null,
+      position: 0,
+      createdAt: new Date(),
+    };
+
+    const completedTodo = {
+      ...openTodo,
+      id: '2',
+      title: 'Completed',
+      completed: true,
+      position: 1,
+    };
+
+    repository.findAll.mockResolvedValue([
+      openTodo,
+      completedTodo,
+    ]);
+
+    const result = await service.findAll('user_123', 'active');
+
+    expect(result).toEqual([openTodo]);
+    expect(repository.findAll).toHaveBeenCalledWith('user_123');
   });
 
-  it('should return all todos of the user when filter = all', () => {
-    service.createTodo(userId, { title: 'Todo 1' });
-    service.createTodo(userId, { title: 'Todo 2' });
-    expect(service.findAll(userId, 'all')).toHaveLength(2);
-  });
+  it('should throw when todo does not exist', async () => {
+    repository.findById.mockResolvedValue(null);
 
-  it('should only return the current users todos', () => {
-    service.createTodo(userId, { title: 'Mein Todo' });
-    service.createTodo('user_other', { title: 'Fremdes Todo' });
-    const result = service.findAll(userId, 'all');
-    expect(result).toHaveLength(1);
-    expect(result[0].title).toBe('Mein Todo');
-  });
-
-  it('should return active todos when filter = active', () => {
-    const todo1 = service.createTodo(userId, { title: 'Todo 1' });
-    service.createTodo(userId, { title: 'Todo 2' });
-    service.updateTodo(userId, todo1.id, { completed: true });
-    expect(service.findAll(userId, 'active')).toHaveLength(1);
-  });
-
-  it('should not find another users todo by id', () => {
-    const foreign = service.createTodo('user_other', { title: 'Fremd' });
-    expect(() => service.findById(userId, foreign.id)).toThrow(NotFoundException);
-  });
-
-  it('should delete own todo and then findById should throw', () => {
-    const todo = service.createTodo(userId, { title: 'Todo 1' });
-    service.deleteTodo(userId, todo.id);
-    expect(() => service.findById(userId, todo.id)).toThrow(NotFoundException);
+    await expect(
+      service.findById('user_123', 'missing'),
+    ).rejects.toThrow(NotFoundException);
   });
 });

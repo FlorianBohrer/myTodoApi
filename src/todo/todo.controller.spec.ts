@@ -19,6 +19,7 @@ describe('TodoController', () => {
             createTodo: jest.fn(),
             updateTodo: jest.fn(),
             deleteTodo: jest.fn(),
+            reorder: jest.fn()
           },
         },
       ],
@@ -30,13 +31,23 @@ describe('TodoController', () => {
     ) as jest.Mocked<TodoService>;
   });
 
-it('should list all todos', () => {
+it('should list all todos', async () => {
   const todos = [
-    { id: '1', userId: 'test_user', title: 'Todo 1', completed: false, createdAt: new Date() },
+    {
+      id: '1',
+      userId: 'test_user',
+      title: 'Todo 1',
+      completed: false,
+      isFavorite: false,
+      categoryId: null,
+      position: 0,
+      createdAt: new Date(),
+    },
   ];
-  todoService.findAll.mockReturnValue(todos);
 
-  const result = controller.getAllTodos('test_user', 'all');
+  todoService.findAll.mockResolvedValue(todos);
+
+  const result = await controller.getAllTodos('test_user', 'all');
 
   expect(result.todo).toEqual(todos);
   expect(result.total).toBe(1);
@@ -53,11 +64,20 @@ it('should return todo by id', () => {
   expect(todoService.findById).toHaveBeenCalledWith('test_user', '1');
 });
 
-it('should create todo', () => {
-  const todo = { id: '1', userId: 'test_user', title: 'Todo 1', completed: false, createdAt: new Date() };
-  todoService.createTodo.mockReturnValue(todo);
+it('should create todo', async () => {
+  const todo = {
+    id: '1',
+    userId: 'test_user',
+    title: 'Todo 1',
+    completed: false,
+    isFavorite: false,
+    categoryId: null,
+    position: 0,
+    createdAt: new Date(),
+  };
+  todoService.createTodo.mockResolvedValue(todo);
 
-  const result = controller.createTodo('test_user', { title: 'Todo 1' });
+  const result = await controller.createTodo('test_user', { title: 'Todo 1' });
 
   expect(result).toEqual(todo);
   expect(todoService.createTodo).toHaveBeenCalledWith('test_user', { title: 'Todo 1' });
