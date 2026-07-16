@@ -1,11 +1,11 @@
-import { Todo } from "../../drizzle/schema";
+import type { TodoItemResponseDto } from './todo-item-response.dto';
 
-export class TodoResponseDto { 
-    todo: Todo[];
-    total: number;
+export class TodoResponseDto {
+  readonly todo: TodoItemResponseDto[];
+  readonly total: number;
 
-    constructor(todo: Todo[]) {
-        this.todo = todo;
-        this.total = todo.length;
-    }
+  constructor(todo: TodoItemResponseDto[]) {
+    this.todo = todo;
+    this.total = todo.length;
+  }
 }

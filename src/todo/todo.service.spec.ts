@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 
-import { TODO_REPOSITORY } from './todo-repository';
+import { TODO_REPOSITORY, TodoRepository } from './todo-repository';
 describe('TodoService', () => {
   let service: TodoService;
   let repository: jest.Mocked<TodoRepository>;
@@ -120,6 +120,17 @@ it('rejects updating a todo with a foreign category', async () => {
       id: '1',
       userId: 'user_123',
       title: 'Open',
+      completed: false,
+      isFavorite: false,
+      categoryId: null,
+      position: 0,
+      createdAt: new Date(),
+    };
+
+    const databaseTodo = {
+      id: '11111111-1111-4111-8111-111111111111',
+      userId: 'user_123',
+      title: 'Todo 1',
       completed: false,
       isFavorite: false,
       categoryId: null,

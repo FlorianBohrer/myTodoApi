@@ -11,12 +11,13 @@ import {
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import type { Filter } from './todo.model';
-import type { Todo } from '../drizzle/schema';
 import { TodoResponseDto } from './dto/todo-response.dto';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { ReorderTodosDto } from './dto/reorder-todos.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
+import { TodoItemResponseDto } from './dto/todo-item-response.dto';
+import { toTodoItemResponse } from './todo.mapper';
 
 @Controller('todo')
 export class TodoController {
@@ -28,7 +29,10 @@ export class TodoController {
     @Query('filter') filter: Filter,
   ): Promise<TodoResponseDto> {
     const items = await this.todoService.findAll(userId, filter);
-    return new TodoResponseDto(items);
+
+    return new TodoResponseDto(
+      items.map(toTodoItemResponse),
+    );
   }
 
   // Muss vor den ':id'-Routen stehen, sonst wird 'reorder' als id interpretiert.
@@ -40,30 +44,43 @@ export class TodoController {
     return this.todoService.reorder(userId, reorderTodosDto.ids);
   }
 
-  @Get(':id')
-  getTodoById(
+@Get(':id')
+  async getTodoById(
     @CurrentUserId() userId: string,
     @Param('id') id: string,
-  ): Promise<Todo> {
-    return this.todoService.findById(userId, id);
+  ): Promise<TodoItemResponseDto> {
+    const todo = await this.todoService.findById(userId, id);
+
+    return toTodoItemResponse(todo);
   }
 
-  @Post()
-  createTodo(
+@Post()
+  async createTodo(
     @CurrentUserId() userId: string,
     @Body() createTodoDto: CreateTodoDto,
-  ): Promise<Todo> {
-    return this.todoService.createTodo(userId, createTodoDto);
-  }
+  ): Promise<TodoItemResponseDto> {
+    const todo = await this.todoService.createTodo(
+      userId,
+      createTodoDto,
+    );
+
+  return toTodoItemResponse(todo);
+}
 
   @Put(':id')
-  updateTodo(
+  async updateTodo(
     @CurrentUserId() userId: string,
     @Param('id') id: string,
     @Body() updateTodoDto: UpdateTodoDto,
-  ): Promise<Todo> {
-    return this.todoService.updateTodo(userId, id, updateTodoDto);
-  }
+  ): Promise<TodoItemResponseDto> {
+    const todo = await this.todoService.updateTodo(
+      userId,
+      id,
+      updateTodoDto,
+    );
+
+  return toTodoItemResponse(todo);
+}
 
   @Delete(':id')
   deleteTodo(
