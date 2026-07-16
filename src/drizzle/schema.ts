@@ -1,4 +1,12 @@
-import { pgTable, uuid, text, boolean, integer, timestamp, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  boolean,
+  integer,
+  timestamp,
+  index,
+} from 'drizzle-orm/pg-core';
 
 export const todos = pgTable(
   'todos',
@@ -27,7 +35,7 @@ export const categories = pgTable(
     name: text('name').notNull(),
     color: text('color').notNull(),
     icon: text('icon').notNull().default('tag'),
-    isFavorite: boolean('is_favorite').notNull().default(false),
+    favoritePosition: integer('favorite_position'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [index('category_user_id_idx').on(table.userId)],
