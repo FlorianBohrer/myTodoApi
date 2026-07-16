@@ -16,3 +16,24 @@ export interface TodoRepository {
   delete(userId: string, id: string): Promise<boolean>;
   reorder(userId: string, ids: string[]): Promise<void>;
 }
+
+export interface TodoRepository {
+  findAll(userId: string): Promise<Todo[]>;
+  findById(userId: string, id: string): Promise<Todo | null>;
+
+  categoryBelongsToUser(
+    userId: string,
+    categoryId: string,
+  ): Promise<boolean>;
+
+  create(userId: string, dto: CreateTodoDto): Promise<Todo>;
+
+  update(
+    userId: string,
+    id: string,
+    dto: UpdateTodoDto,
+  ): Promise<Todo | null>;
+
+  delete(userId: string, id: string): Promise<boolean>;
+  reorder(userId: string, ids: string[]): Promise<void>;
+}

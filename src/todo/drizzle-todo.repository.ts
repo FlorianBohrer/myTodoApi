@@ -3,12 +3,15 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 
 import { DRIZZLE } from '../drizzle/drizzle.module';
 import type { DrizzleDB } from '../drizzle/drizzle.module';
-import { todos } from '../drizzle/schema';
 import type { Todo } from '../drizzle/schema';
 
 import type { CreateTodoDto } from './dto/create-todo.dto';
 import type { UpdateTodoDto } from './dto/update-todo.dto';
 import { TodoRepository } from './todo-repository';
+import {
+  categories,
+  todos,
+} from '../drizzle/schema';
 
 @Injectable()
 export class DrizzleTodoRepository implements TodoRepository {
@@ -95,6 +98,26 @@ export class DrizzleTodoRepository implements TodoRepository {
 
     return deletedTodo !== undefined;
   }
+
+  async categoryBelongsToUser(
+  userId: string,
+  categoryId: string,
+): Promise<boolean> {
+  const [category] = await this.db
+    .select({
+      id: categories.id,
+    })
+    .from(categories)
+    .where(
+      and(
+        eq(categories.id, categoryId),
+        eq(categories.userId, userId),
+      ),
+    )
+    .limit(1);
+
+  return category !== undefined;
+}
 
   async reorder(userId: string, ids: string[]): Promise<void> {
     await Promise.all(

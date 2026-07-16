@@ -1,4 +1,6 @@
+
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
@@ -45,30 +47,44 @@ export class TodoService {
     return todo;
   }
 
-  async createTodo(
-    userId: string,
-    dto: CreateTodoDto,
-  ): Promise<Todo> {
-    return this.repository.create(userId, dto);
-  }
+async createTodo(
+  userId: string,
+  dto: CreateTodoDto,
+): Promise<Todo> {
+  await this.assertCategoryOwnership(
+    userId,
+    dto.categoryId,
+  );
+
+  return this.repository.create(userId, dto);
+}
 
   async reorder(userId: string, ids: string[]): Promise<void> {
     return this.repository.reorder(userId, ids);
   }
 
-  async updateTodo(
-    userId: string,
-    id: string,
-    dto: UpdateTodoDto,
-  ): Promise<Todo> {
-    const todo = await this.repository.update(userId, id, dto);
+ async updateTodo(
+  userId: string,
+  id: string,
+  dto: UpdateTodoDto,
+): Promise<Todo> {
+  await this.assertCategoryOwnership(
+    userId,
+    dto.categoryId,
+  );
 
-    if (!todo) {
-      throw new NotFoundException('Todo not found');
-    }
+  const todo = await this.repository.update(
+    userId,
+    id,
+    dto,
+  );
 
-    return todo;
+  if (!todo) {
+    throw new NotFoundException('Todo not found');
   }
+
+  return todo;
+}
 
   async deleteTodo(userId: string, id: string): Promise<void> {
     const deleted = await this.repository.delete(userId, id);
@@ -77,4 +93,25 @@ export class TodoService {
       throw new NotFoundException('Todo not found');
     }
   }
+  private async assertCategoryOwnership(
+  userId: string,
+  categoryId: string | null | undefined,
+): Promise<void> {
+  if (categoryId === null || categoryId === undefined) {
+    return;
+  }
+
+  const belongsToUser =
+    await this.repository.categoryBelongsToUser(
+      userId,
+      categoryId,
+    );
+
+  if (!belongsToUser) {
+    throw new BadRequestException(
+      'Category does not exist for this user',
+    );
+  }
 }
+}
+
