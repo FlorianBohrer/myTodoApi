@@ -22,6 +22,12 @@ export const todos = pgTable(
       onDelete: 'set null',
     }),
     position: integer('position').notNull().default(0),
+
+    // Zeitblock: Startzeitpunkt kommt vom Server, die Restzeit rechnet das
+    // Frontend daraus aus. Beide null = kein Timer aktiv.
+    timerStartedAt: timestamp('timer_started_at'),
+    timerDurationSeconds: integer('timer_duration_seconds'),
+
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [index('todo_user_id_idx').on(table.userId)],
@@ -36,6 +42,8 @@ export const categories = pgTable(
     color: text('color').notNull(),
     icon: text('icon').notNull().default('tag'),
     favoritePosition: integer('favorite_position'),
+    // Reihenfolge im Folder-Overlay (per Drag & Drop änderbar).
+    position: integer('position').notNull().default(0),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [index('category_user_id_idx').on(table.userId)],

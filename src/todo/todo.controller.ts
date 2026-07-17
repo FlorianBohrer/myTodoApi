@@ -6,6 +6,7 @@ import {
   Param,
   Get,
   Query,
+  Patch,
   Put,
   Delete,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { TodoResponseDto } from './dto/todo-response.dto';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { ReorderTodosDto } from './dto/reorder-todos.dto';
+import { SetTimerDto } from './dto/set-timer.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { TodoItemResponseDto } from './dto/todo-item-response.dto';
 import { toTodoItemResponse } from './todo.mapper';
@@ -81,6 +83,21 @@ export class TodoController {
 
   return toTodoItemResponse(todo);
 }
+
+  @Patch(':id/timer')
+  async setTimer(
+    @CurrentUserId() userId: string,
+    @Param('id') id: string,
+    @Body() setTimerDto: SetTimerDto,
+  ): Promise<TodoItemResponseDto> {
+    const todo = await this.todoService.setTimer(
+      userId,
+      id,
+      setTimerDto.durationSeconds,
+    );
+
+    return toTodoItemResponse(todo);
+  }
 
   @Delete(':id')
   deleteTodo(

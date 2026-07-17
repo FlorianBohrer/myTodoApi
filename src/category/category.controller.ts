@@ -14,6 +14,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { SetCategoryFavoriteDto } from './dto/set-category-favorite.dto';
+import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
 import { toCategoryItemResponse } from './dto/category.mapper';
 import { CategoryItemResponseDto } from './dto/category-item-response.dto';
 
@@ -45,6 +46,15 @@ async createCategory(
     );
 
   return toCategoryItemResponse(category);
+}
+
+// Muss vor den ':id'-Routen stehen, sonst wird 'reorder' als id interpretiert.
+@Put('reorder')
+reorderCategories(
+  @CurrentUserId() userId: string,
+  @Body() dto: ReorderCategoriesDto,
+): Promise<void> {
+  return this.categoryService.reorder(userId, dto.ids);
 }
 
 @Put(':id')

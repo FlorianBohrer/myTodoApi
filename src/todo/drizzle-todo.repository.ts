@@ -85,6 +85,29 @@ export class DrizzleTodoRepository implements TodoRepository {
     return todo ?? null;
   }
 
+  async setTimer(
+    userId: string,
+    id: string,
+    startedAt: Date | null,
+    durationSeconds: number | null,
+  ): Promise<Todo | null> {
+    const [todo] = await this.db
+      .update(todos)
+      .set({
+        timerStartedAt: startedAt,
+        timerDurationSeconds: durationSeconds,
+      })
+      .where(
+        and(
+          eq(todos.id, id),
+          eq(todos.userId, userId),
+        ),
+      )
+      .returning();
+
+    return todo ?? null;
+  }
+
   async delete(userId: string, id: string): Promise<boolean> {
     const [deletedTodo] = await this.db
       .delete(todos)

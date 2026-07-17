@@ -11,5 +11,7 @@ export function toTodoItemResponse(
     todo.isFavorite,
     todo.categoryId,
     todo.createdAt,
+    todo.timerStartedAt,
+    todo.timerDurationSeconds,
   );
 }

@@ -6,5 +6,7 @@ export class TodoItemResponseDto {
     public readonly isFavorite: boolean,
     public readonly categoryId: string | null,
     public readonly createdAt: Date,
+    public readonly timerStartedAt: Date | null,
+    public readonly timerDurationSeconds: number | null,
   ) {}
 }

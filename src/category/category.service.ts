@@ -4,7 +4,7 @@ import {
   Injectable, 
   NotFoundException
 } from '@nestjs/common';
-import { and, eq , isNotNull} from 'drizzle-orm';
+import { and, asc, eq , isNotNull, sql} from 'drizzle-orm';
 import { DRIZZLE } from '../drizzle/drizzle.module';
 import type { DrizzleDB } from '../drizzle/drizzle.module';
 import { categories, Category } from '../drizzle/schema';
@@ -19,13 +19,22 @@ export class CategoryService {
     return this.db
       .select()
       .from(categories)
-      .where(eq(categories.userId, userId));
+      .where(eq(categories.userId, userId))
+      .orderBy(asc(categories.position), asc(categories.createdAt));
   }
 
   async createCategory(
     userId: string,
     dto: CreateCategoryDto,
   ): Promise<Category> {
+    // Neue Folder hinten anhängen, sonst landen sie zwischen den sortierten.
+    const [{ maxPosition }] = await this.db
+      .select({
+        maxPosition: sql<number>`coalesce(max(${categories.position}), -1)`,
+      })
+      .from(categories)
+      .where(eq(categories.userId, userId));
+
     const [category] = await this.db
       .insert(categories)
       .values({
@@ -33,9 +42,27 @@ export class CategoryService {
         name: dto.name,
         color: dto.color,
         icon: dto.icon ?? 'tag',
+        position: maxPosition + 1,
       })
       .returning();
     return category;
+  }
+
+  /** Speichert die neue Reihenfolge: Index im Array = Position. */
+  async reorder(userId: string, ids: string[]): Promise<void> {
+    await Promise.all(
+      ids.map((id, index) =>
+        this.db
+          .update(categories)
+          .set({ position: index })
+          .where(
+            and(
+              eq(categories.id, id),
+              eq(categories.userId, userId),
+            ),
+          ),
+      ),
+    );
   }
 
   async updateCategory(

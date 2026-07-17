@@ -87,6 +87,32 @@ async createTodo(
   return todo;
 }
 
+  /**
+   * Startet einen Zeitblock (durationSeconds gesetzt) oder beendet ihn (null).
+   * Der Startzeitpunkt kommt vom Server, damit die Restzeit unabhängig von der
+   * Uhr des Browsers stimmt.
+   */
+  async setTimer(
+    userId: string,
+    id: string,
+    durationSeconds: number | null,
+  ): Promise<Todo> {
+    const startedAt = durationSeconds === null ? null : new Date();
+
+    const todo = await this.repository.setTimer(
+      userId,
+      id,
+      startedAt,
+      durationSeconds,
+    );
+
+    if (!todo) {
+      throw new NotFoundException('Todo not found');
+    }
+
+    return todo;
+  }
+
   async deleteTodo(userId: string, id: string): Promise<void> {
     const deleted = await this.repository.delete(userId, id);
 
