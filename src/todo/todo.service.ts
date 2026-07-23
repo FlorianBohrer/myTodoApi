@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import type { Todo } from '../drizzle/schema';
+import type { TodoWithCategories } from '../drizzle/schema';
 import type { Filter } from './todo.model';
 import type { CreateTodoDto } from './dto/create-todo.dto';
 import type { UpdateTodoDto } from './dto/update-todo.dto';
@@ -24,7 +24,7 @@ export class TodoService {
     private readonly repository: TodoRepository,
   ) {}
 
-  async findAll(userId: string, filter: Filter): Promise<Todo[]> {
+  async findAll(userId: string, filter: Filter): Promise<TodoWithCategories[]> {
     const items = await this.repository.findAll(userId);
 
     if (filter === 'active') {
@@ -38,7 +38,7 @@ export class TodoService {
     return items;
   }
 
-  async findById(userId: string, id: string): Promise<Todo> {
+  async findById(userId: string, id: string): Promise<TodoWithCategories> {
     const todo = await this.repository.findById(userId, id);
 
     if (!todo) {
@@ -51,7 +51,7 @@ export class TodoService {
 async createTodo(
   userId: string,
   dto: CreateTodoDto,
-): Promise<Todo> {
+): Promise<TodoWithCategories> {
   await this.assertCategoryOwnership(
     userId,
     dto.categoryId,
@@ -68,7 +68,7 @@ async createTodo(
   userId: string,
   id: string,
   dto: UpdateTodoDto,
-): Promise<Todo> {
+): Promise<TodoWithCategories> {
   await this.assertCategoryOwnership(
     userId,
     dto.categoryId,
@@ -96,7 +96,7 @@ async createTodo(
     userId: string,
     id: string,
     durationSeconds: number | null,
-  ): Promise<Todo> {
+  ): Promise<TodoWithCategories> {
     const startedAt = durationSeconds === null ? null : new Date();
 
     const todo = await this.repository.setTimer(
@@ -105,6 +105,28 @@ async createTodo(
       startedAt,
       durationSeconds,
     );
+
+    if (!todo) {
+      throw new NotFoundException('Todo not found');
+    }
+
+    return todo;
+  }
+
+  /** Setzt die komplette Label-Menge eines Todos (n:m). */
+  async setCategories(
+    userId: string,
+    id: string,
+    categoryIds: string[],
+  ): Promise<TodoWithCategories> {
+    const uniqueIds = [...new Set(categoryIds)];
+
+    // Jedes Label muss dem Nutzer gehören — kein Fremd-Label unterjubeln.
+    for (const categoryId of uniqueIds) {
+      await this.assertCategoryOwnership(userId, categoryId);
+    }
+
+    const todo = await this.repository.setCategories(userId, id, uniqueIds);
 
     if (!todo) {
       throw new NotFoundException('Todo not found');

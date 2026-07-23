@@ -6,6 +6,7 @@ import {
   integer,
   timestamp,
   index,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 
 export const todos = pgTable(
@@ -49,8 +50,30 @@ export const categories = pgTable(
   (table) => [index('category_user_id_idx').on(table.userId)],
 );
 
+// n:m zwischen Todos und Kategorien. Ein Todo kann mehrere Labels tragen,
+// ein Label an mehreren Todos hängen. ON DELETE CASCADE räumt die Zuweisungen
+// automatisch auf, wenn ein Todo oder ein Folder gelöscht wird.
+export const todoCategories = pgTable(
+  'todo_categories',
+  {
+    todoId: uuid('todo_id')
+      .notNull()
+      .references(() => todos.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.todoId, table.categoryId] }),
+    index('todo_categories_todo_id_idx').on(table.todoId),
+  ],
+);
+
 export type Todo = typeof todos.$inferSelect;
 export type newTodo = typeof todos.$inferInsert;
 
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
+
+/** Ein Todo samt seiner Label-IDs (aus der Zwischentabelle zusammengesetzt). */
+export type TodoWithCategories = Todo & { categoryIds: string[] };

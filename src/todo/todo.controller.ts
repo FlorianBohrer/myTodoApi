@@ -17,6 +17,7 @@ import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { ReorderTodosDto } from './dto/reorder-todos.dto';
 import { SetTimerDto } from './dto/set-timer.dto';
+import { SetCategoriesDto } from './dto/set-categories.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { TodoItemResponseDto } from './dto/todo-item-response.dto';
 import { toTodoItemResponse } from './todo.mapper';
@@ -83,6 +84,21 @@ export class TodoController {
 
   return toTodoItemResponse(todo);
 }
+
+  @Put(':id/categories')
+  async setCategories(
+    @CurrentUserId() userId: string,
+    @Param('id') id: string,
+    @Body() setCategoriesDto: SetCategoriesDto,
+  ): Promise<TodoItemResponseDto> {
+    const todo = await this.todoService.setCategories(
+      userId,
+      id,
+      setCategoriesDto.categoryIds,
+    );
+
+    return toTodoItemResponse(todo);
+  }
 
   @Patch(':id/timer')
   async setTimer(

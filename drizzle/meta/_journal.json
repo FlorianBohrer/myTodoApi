@@ -64,6 +64,13 @@
       "when": 1784285696784,
       "tag": "0008_nasty_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784800063456,
+      "tag": "0009_narrow_tigra",
+      "breakpoints": true
     }
   ]
 }

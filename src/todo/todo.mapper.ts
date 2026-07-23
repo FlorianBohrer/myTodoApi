@@ -1,8 +1,8 @@
-import type { Todo } from '../drizzle/schema';
+import type { TodoWithCategories } from '../drizzle/schema';
 import { TodoItemResponseDto } from './dto/todo-item-response.dto';
 
 export function toTodoItemResponse(
-  todo: Todo,
+  todo: TodoWithCategories,
 ): TodoItemResponseDto {
   return new TodoItemResponseDto(
     todo.id,
@@ -10,6 +10,7 @@ export function toTodoItemResponse(
     todo.completed,
     todo.isFavorite,
     todo.categoryId,
+    todo.categoryIds,
     todo.createdAt,
     todo.timerStartedAt,
     todo.timerDurationSeconds,
