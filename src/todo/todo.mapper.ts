@@ -14,5 +14,6 @@ export function toTodoItemResponse(
     todo.createdAt,
     todo.timerStartedAt,
     todo.timerDurationSeconds,
+    todo.scheduledDate,
   );
 }

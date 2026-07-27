@@ -1,4 +1,4 @@
-import { IsOptional, IsString ,IsBoolean ,IsUUID ,MinLength } from "class-validator";
+import { IsDateString, IsOptional, IsString ,IsBoolean ,IsUUID ,MinLength } from "class-validator";
 
 export class UpdateTodoDto {
     @IsOptional()
@@ -17,4 +17,9 @@ export class UpdateTodoDto {
     @IsOptional()
     @IsBoolean()
     isFavorite?: boolean;
+
+    // Wochenansicht: YYYY-MM-DD einem Tag zuordnen, null = zurück in den Backlog.
+    @IsOptional()
+    @IsDateString()
+    scheduledDate?: string | null;
 }

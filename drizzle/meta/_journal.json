@@ -71,6 +71,13 @@
       "when": 1784800063456,
       "tag": "0009_narrow_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785138977926,
+      "tag": "0010_spooky_magma",
+      "breakpoints": true
     }
   ]
 }

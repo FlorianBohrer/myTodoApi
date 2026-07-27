@@ -10,5 +10,7 @@ export class TodoItemResponseDto {
     public readonly createdAt: Date,
     public readonly timerStartedAt: Date | null,
     public readonly timerDurationSeconds: number | null,
+    // Wochenansicht: YYYY-MM-DD oder null (ungeplant).
+    public readonly scheduledDate: string | null,
   ) {}
 }

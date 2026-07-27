@@ -5,6 +5,7 @@ import {
   boolean,
   integer,
   timestamp,
+  date,
   index,
   primaryKey,
 } from 'drizzle-orm/pg-core';
@@ -28,6 +29,10 @@ export const todos = pgTable(
     // Frontend daraus aus. Beide null = kein Timer aktiv.
     timerStartedAt: timestamp('timer_started_at'),
     timerDurationSeconds: integer('timer_duration_seconds'),
+
+    // Für die Wochenansicht: reines Datum (YYYY-MM-DD, ohne Uhrzeit/Zeitzone).
+    // null = ungeplant (Backlog).
+    scheduledDate: date('scheduled_date'),
 
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },

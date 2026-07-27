@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUUID, MinLength } from "class-validator";
+import { IsDateString, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
 
 export class CreateTodoDto {
     @IsString()
@@ -8,4 +8,9 @@ export class CreateTodoDto {
     @IsOptional()
     @IsUUID()
     categoryId?: string | null;
+
+    // Wochenansicht: reines Datum YYYY-MM-DD; weglassen/null = ungeplant.
+    @IsOptional()
+    @IsDateString()
+    scheduledDate?: string | null;
 }

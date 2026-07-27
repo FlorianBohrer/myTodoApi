@@ -97,6 +97,7 @@ export class DrizzleTodoRepository implements TodoRepository {
         userId,
         title: dto.title,
         categoryId: dto.categoryId ?? null,
+        scheduledDate: dto.scheduledDate ?? null,
         position: maxPosition + 1,
       })
       .returning();

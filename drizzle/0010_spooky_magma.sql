@@ -1,0 +1,1 @@
+ALTER TABLE "todos" ADD COLUMN "scheduled_date" date;
