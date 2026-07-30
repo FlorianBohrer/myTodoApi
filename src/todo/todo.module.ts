@@ -14,5 +14,7 @@ import { DrizzleTodoRepository } from './drizzle-todo.repository';
       useClass: DrizzleTodoRepository,
     },
   ],
+  // Fokusblöcke schreiben die Timer-Felder am Todo mit.
+  exports: [TODO_REPOSITORY],
 })
 export class TodoModule {}
