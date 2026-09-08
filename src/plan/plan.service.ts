@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 
 import { DRIZZLE } from '../drizzle/drizzle.module';
 import type { DrizzleDB } from '../drizzle/drizzle.module';
@@ -35,9 +35,25 @@ export class PlanService {
 
   async createPlan(userId: string, dto: CreatePlanDto): Promise<Plan> {
     await this.assertCategoryOwnership(userId, dto.categoryId);
+
+    // Neue Pläne hinten anhängen, sonst landen sie zwischen den sortierten:
+    // ohne das bekäme jeder Plan position 0 und stünde nach dem ersten
+    // Umsortieren wieder ganz oben.
+    const [{ maxPosition }] = await this.db
+      .select({
+        maxPosition: sql<number>`coalesce(max(${plans.position}), -1)`,
+      })
+      .from(plans)
+      .where(eq(plans.userId, userId));
+
     const [plan] = await this.db
       .insert(plans)
-      .values({ userId, title: dto.title, categoryId: dto.categoryId ?? null })
+      .values({
+        userId,
+        title: dto.title,
+        categoryId: dto.categoryId ?? null,
+        position: maxPosition + 1,
+      })
       .returning();
     return plan;
   }
@@ -55,6 +71,22 @@ export class PlanService {
       .returning();
     if (!plan) throw new NotFoundException('Plan not found');
     return plan;
+  }
+
+  /**
+   * Schreibt die übergebene Reihenfolge als position. Die userId steht in der
+   * where-Bedingung, eine fremde Plan-ID trifft daher keine Zeile — so kann
+   * niemand über diesen Weg fremde Pläne umsortieren.
+   */
+  async reorder(userId: string, ids: string[]): Promise<void> {
+    await Promise.all(
+      ids.map((id, index) =>
+        this.db
+          .update(plans)
+          .set({ position: index })
+          .where(and(eq(plans.id, id), eq(plans.userId, userId))),
+      ),
+    );
   }
 
   async deletePlan(userId: string, id: string): Promise<void> {

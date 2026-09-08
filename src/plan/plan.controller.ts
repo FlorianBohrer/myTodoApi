@@ -11,6 +11,7 @@ import { PlanService } from './plan.service';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
+import { ReorderPlansDto } from './dto/reorder-plans.dto';
 import {
   PlanListResponseDto,
   PlanResponseDto,
@@ -43,6 +44,15 @@ export class PlanController {
     @Body() dto: CreatePlanDto,
   ): Promise<PlanResponseDto> {
     return toPlanResponse(await this.planService.createPlan(userId, dto));
+  }
+
+  // Muss vor den ':id'-Routen stehen, sonst wird 'reorder' als id interpretiert.
+  @Put('reorder')
+  reorderPlans(
+    @CurrentUserId() userId: string,
+    @Body() dto: ReorderPlansDto,
+  ): Promise<void> {
+    return this.planService.reorder(userId, dto.ids);
   }
 
   @Put(':id')
