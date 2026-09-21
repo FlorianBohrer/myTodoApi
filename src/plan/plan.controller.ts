@@ -93,8 +93,18 @@ export class PlanController {
   async aiStatus(
     @CurrentUserId() userId: string,
   ): Promise<{ available: boolean; remaining: number; limit: number }> {
-    const { remaining, limit } = await this.quota.state(userId);
-    return { available: this.ai.available, remaining, limit };
+    const quota = await this.quota.state(userId);
+
+    // Kein lesbares Kontingent heisst: die Funktion ist nicht benutzbar. Das
+    // dem Client zu sagen ist richtiger, als ihm einen Fehler zu schicken —
+    // er blendet sie dann aus, statt bei jedem Absatz zu scheitern.
+    if (!quota) return { available: false, remaining: 0, limit: 0 };
+
+    return {
+      available: this.ai.available,
+      remaining: quota.remaining,
+      limit: quota.limit,
+    };
   }
 
   // Muss vor den ':id'-Routen stehen, sonst wird 'reorder' als id interpretiert.

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { and, eq, sql } from 'drizzle-orm';
 
@@ -45,6 +45,8 @@ export interface QuotaState {
  */
 @Injectable()
 export class AiQuotaService {
+  private readonly logger = new Logger(AiQuotaService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly config: ConfigService,
@@ -64,31 +66,52 @@ export class AiQuotaService {
   async consume(userId: string): Promise<boolean> {
     const limit = this.limit;
 
-    const rows = await this.db
-      .insert(aiUsage)
-      .values({ userId, day: sql`CURRENT_DATE`, count: 1 })
-      .onConflictDoUpdate({
-        target: [aiUsage.userId, aiUsage.day],
-        set: { count: sql`${aiUsage.count} + 1` },
-        // Greift die Bedingung nicht, wird nichts geschrieben und nichts
-        // zurückgegeben — genau das ist der abgelehnte Fall.
-        setWhere: sql`${aiUsage.count} < ${limit}`,
-      })
-      .returning({ count: aiUsage.count });
+    try {
+      const rows = await this.db
+        .insert(aiUsage)
+        .values({ userId, day: sql`CURRENT_DATE`, count: 1 })
+        .onConflictDoUpdate({
+          target: [aiUsage.userId, aiUsage.day],
+          set: { count: sql`${aiUsage.count} + 1` },
+          // Greift die Bedingung nicht, wird nichts geschrieben und nichts
+          // zurückgegeben — genau das ist der abgelehnte Fall.
+          setWhere: sql`${aiUsage.count} < ${limit}`,
+        })
+        .returning({ count: aiUsage.count });
 
-    return rows.length > 0;
+      return rows.length > 0;
+    } catch (error) {
+      // Fehlt die Tabelle oder hakt die Datenbank, laesst sich nicht mehr
+      // zaehlen. Dann wird abgelehnt, nicht durchgewunken: ein Kostendeckel,
+      // der bei der ersten Stoerung aufgeht, ist keiner.
+      this.logger.error('Kontingent nicht abbuchbar', error as Error);
+      return false;
+    }
   }
 
-  /** Stand für heute, ohne etwas abzubuchen. */
-  async state(userId: string): Promise<QuotaState> {
+  /**
+   * Stand für heute, ohne etwas abzubuchen. null = laesst sich nicht sagen.
+   *
+   * Der Aufrufer macht daraus „Funktion nicht verfuegbar". Ein ungefangener
+   * Fehler waere hier ein 500 gewesen — fuer eine optionale Funktion die
+   * falsche Antwort: sie darf ausfallen, aber nicht die Seite mitnehmen.
+   */
+  async state(userId: string): Promise<QuotaState | null> {
     const limit = this.limit;
 
-    const [row] = await this.db
-      .select({ count: aiUsage.count })
-      .from(aiUsage)
-      .where(and(eq(aiUsage.userId, userId), eq(aiUsage.day, sql`CURRENT_DATE`)));
+    try {
+      const [row] = await this.db
+        .select({ count: aiUsage.count })
+        .from(aiUsage)
+        .where(and(eq(aiUsage.userId, userId), eq(aiUsage.day, sql`CURRENT_DATE`)));
 
-    const used = row?.count ?? 0;
-    return { used, limit, remaining: Math.max(0, limit - used) };
+      const used = row?.count ?? 0;
+      return { used, limit, remaining: Math.max(0, limit - used) };
+    } catch (error) {
+      // Die haeufigste Ursache steht in der Meldung: fehlt die Migration,
+      // sagt Postgres `relation "ai_usage" does not exist`.
+      this.logger.error('Kontingentstand nicht lesbar', error as Error);
+      return null;
+    }
   }
 }
