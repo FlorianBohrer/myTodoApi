@@ -4,6 +4,8 @@ import request from 'supertest';
 
 import { PlanController } from './plan.controller';
 import { PlanService } from './plan.service';
+import { AiService } from '../ai/ai.service';
+import { AiQuotaService } from '../ai/ai-quota.service';
 
 /**
  * Die Reorder-Route teilt sich das Präfix mit PUT /plan/:id. Steht sie an der
@@ -36,6 +38,17 @@ describe('PlanController', () => {
             updatePlan,
             reorder,
           },
+        },
+        // Die Titelvorschläge hängen am selben Controller. Für das Routing
+        // spielen sie keine Rolle — aber ohne Attrappe lässt sich der
+        // Controller nicht bauen, und der Test prüfte nichts mehr.
+        {
+          provide: AiService,
+          useValue: { available: false, suggestSectionTitle: jest.fn() },
+        },
+        {
+          provide: AiQuotaService,
+          useValue: { limit: 0, consume: jest.fn(), state: jest.fn() },
         },
       ],
     }).compile();

@@ -10,5 +10,6 @@ export function toCategoryItemResponse(
     category.color,
     category.icon,
     category.favoritePosition,
+    category.collection,
   );
 }

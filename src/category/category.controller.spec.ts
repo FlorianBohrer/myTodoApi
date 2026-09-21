@@ -37,6 +37,8 @@ describe('CategoryController', () => {
       color: 'rose',
       icon: 'briefcase',
       favoritePosition: 0,
+      position: 3,
+      collection: 'Clients',
       createdAt: new Date(),
     };
 
@@ -54,6 +56,7 @@ describe('CategoryController', () => {
         color: category.color,
         icon: category.icon,
         favoritePosition: category.favoritePosition,
+        collection: category.collection,
       },
     ]);
 

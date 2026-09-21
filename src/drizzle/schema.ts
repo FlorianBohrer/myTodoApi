@@ -52,6 +52,14 @@ export const categories = pgTable(
     favoritePosition: integer('favorite_position'),
     // Reihenfolge im Folder-Overlay (per Drag & Drop änderbar).
     position: integer('position').notNull().default(0),
+    // Frei benannte Sammlung, in der dieser Folder in der Übersicht steht.
+    // null = keiner zugeordnet.
+    //
+    // Bewusst ein Name und keine eigene Tabelle: eine Sammlung IST die Menge
+    // der Folder, die denselben Namen tragen. Anlegen heißt tippen, Auflösen
+    // heißt, den Namen beim letzten Folder zu entfernen — es gibt keinen
+    // leeren Sammlungs-Datensatz, der verwaisen oder inkonsistent werden kann.
+    collection: text('collection'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [index('category_user_id_idx').on(table.userId)],
