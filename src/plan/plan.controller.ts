@@ -17,6 +17,7 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { ReorderPlansDto } from './dto/reorder-plans.dto';
 import {
+  AiStatusDto,
   SuggestTitleDto,
   SuggestTitleResponseDto,
 } from './dto/suggest-title.dto';
@@ -90,20 +91,25 @@ export class PlanController {
    * dann abzulehnen.
    */
   @Get('ai/status')
-  async aiStatus(
-    @CurrentUserId() userId: string,
-  ): Promise<{ available: boolean; remaining: number; limit: number }> {
+  async aiStatus(@CurrentUserId() userId: string): Promise<AiStatusDto> {
     const quota = await this.quota.state(userId);
 
     // Kein lesbares Kontingent heisst: die Funktion ist nicht benutzbar. Das
     // dem Client zu sagen ist richtiger, als ihm einen Fehler zu schicken —
     // er blendet sie dann aus, statt bei jedem Absatz zu scheitern.
-    if (!quota) return { available: false, remaining: 0, limit: 0 };
+    if (!quota) {
+      return { available: false, remaining: 0, limit: 0, reason: 'storage' };
+    }
+
+    if (!this.ai.available) {
+      return { available: false, remaining: quota.remaining, limit: quota.limit, reason: 'no-key' };
+    }
 
     return {
-      available: this.ai.available,
+      available: true,
       remaining: quota.remaining,
       limit: quota.limit,
+      reason: 'ok',
     };
   }
 
