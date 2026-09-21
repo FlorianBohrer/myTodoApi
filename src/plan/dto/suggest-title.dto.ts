@@ -11,12 +11,21 @@ export class SuggestTitleDto {
   text!: string;
 }
 
-export class SuggestTitleResponseDto {
-  /** null = kein brauchbarer Vorschlag. Kein Fehler, nur nichts zu sagen. */
+/** Was der Dienst zurueckgibt: ein Titel, oder keiner samt Grund. */
+export interface SuggestionResult {
   title: string | null;
+  /** Gesetzt, wenn der Aufruf scheiterte. Fehlt, wenn schlicht nichts zu sagen war. */
+  error?: string;
+}
 
-  constructor(title: string | null) {
-    this.title = title;
+export class SuggestTitleResponseDto {
+  /** null = kein Titel. Ohne `error` heisst das: nichts zu sagen, kein Problem. */
+  title: string | null;
+  error?: string;
+
+  constructor(result: SuggestionResult) {
+    this.title = result.title;
+    this.error = result.error;
   }
 }
 

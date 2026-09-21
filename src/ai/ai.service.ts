@@ -1,6 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
+import { SuggestionResult } from '../plan/dto/suggest-title.dto';
 
 /** Länge, ab der ein Titel abgeschnitten wird — er soll in eine Lasche passen. */
 export const MAX_TITLE_LENGTH = 48;
@@ -47,6 +48,28 @@ export function cleanTitle(raw: string): string | null {
 }
 
 /**
+ * Eine Fehlermeldung, die dem Nutzer etwas sagt und nichts verrät.
+ *
+ * Statuscode und Fehlertyp der API genügen zur Diagnose — 401 heisst
+ * abgelehnter Schlüssel, 400 mit „credit" heisst leeres Guthaben. Die rohe
+ * Ausnahme samt Anfrage bleibt im Log.
+ */
+function describe(error: unknown): string {
+  if (error instanceof Anthropic.APIError) {
+    const kind =
+      error.status === 401
+        ? 'the API key was rejected'
+        : error.status === 429
+          ? 'the API rate limit was hit'
+          : error.status === 400 && /credit|balance|billing/i.test(error.message)
+            ? 'the Anthropic account has no credit'
+            : error.name;
+    return `Anthropic API ${error.status}: ${kind}`;
+  }
+  return 'The request to the model failed';
+}
+
+/**
  * Anbindung an Claude.
  *
  * Bewusst serverseitig: ein API-Schlüssel im Browser ist öffentlich, egal wie
@@ -83,9 +106,9 @@ export class AiService {
    * ist, das Modell ablehnt oder etwas schiefgeht — die Funktion ist optional,
    * also darf ihr Ausfall nie den Aufrufer blockieren.
    */
-  async suggestSectionTitle(text: string): Promise<string | null> {
+  async suggestSectionTitle(text: string): Promise<SuggestionResult> {
     const passage = text.trim().slice(0, MAX_INPUT_CHARS);
-    if (passage.length < 40) return null;
+    if (passage.length < 40) return { title: null };
 
     try {
       const response = await this.getClient().beta.messages.create({
@@ -107,7 +130,7 @@ export class AiService {
         this.logger.warn(
           `Titelvorschlag abgelehnt: ${response.stop_details?.category ?? 'unbekannt'}`,
         );
-        return null;
+        return { title: null, error: 'The model declined this passage' };
       }
 
       const raw = response.content
@@ -116,12 +139,14 @@ export class AiService {
         .join('')
         .trim();
 
-      return cleanTitle(raw);
+      return { title: cleanTitle(raw) };
     } catch (error) {
-      // Ein fehlgeschlagener Vorschlag ist ein fehlender Vorschlag, kein Fehler
-      // der Seite. Der Client zeigt dann einfach nichts an.
+      // Ein fehlgeschlagener Vorschlag bleibt ein fehlender Vorschlag — die
+      // Seite soll deswegen nicht kaputtgehen. Der GRUND geht aber mit:
+      // „Modell wollte nicht" und „Schlüssel abgelehnt" sehen im Editor sonst
+      // identisch aus, und man sucht die Ursache stundenlang im Falschen.
       this.logger.error('Titelvorschlag fehlgeschlagen', error as Error);
-      return null;
+      return { title: null, error: describe(error) };
     }
   }
 
