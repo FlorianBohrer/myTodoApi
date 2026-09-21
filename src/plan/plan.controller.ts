@@ -8,10 +8,15 @@ import {
   Put,
 } from '@nestjs/common';
 import { PlanService } from './plan.service';
+import { AiService } from '../ai/ai.service';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { ReorderPlansDto } from './dto/reorder-plans.dto';
+import {
+  SuggestTitleDto,
+  SuggestTitleResponseDto,
+} from './dto/suggest-title.dto';
 import {
   PlanListResponseDto,
   PlanResponseDto,
@@ -20,7 +25,10 @@ import {
 
 @Controller('plan')
 export class PlanController {
-  constructor(private readonly planService: PlanService) {}
+  constructor(
+    private readonly planService: PlanService,
+    private readonly ai: AiService,
+  ) {}
 
   @Get()
   async getAll(
@@ -44,6 +52,28 @@ export class PlanController {
     @Body() dto: CreatePlanDto,
   ): Promise<PlanResponseDto> {
     return toPlanResponse(await this.planService.createPlan(userId, dto));
+  }
+
+  /**
+   * Überschrift für einen Absatz vorschlagen, der keine hat.
+   *
+   * Antwortet immer mit 200 — auch wenn nichts herauskommt. Ein fehlender
+   * Vorschlag ist kein Fehler, und die Funktion ist optional: sie darf den
+   * Editor nie mit einer roten Meldung unterbrechen.
+   */
+  @Post('suggest-title')
+  async suggestTitle(
+    @Body() dto: SuggestTitleDto,
+  ): Promise<SuggestTitleResponseDto> {
+    return new SuggestTitleResponseDto(
+      await this.ai.suggestSectionTitle(dto.text),
+    );
+  }
+
+  /** Sagt dem Client, ob Vorschläge überhaupt eingerichtet sind. */
+  @Get('ai/status')
+  aiStatus(): { available: boolean } {
+    return { available: this.ai.available };
   }
 
   // Muss vor den ':id'-Routen stehen, sonst wird 'reorder' als id interpretiert.
