@@ -168,6 +168,28 @@ export const plans = pgTable(
   (table) => [index('plan_user_id_idx').on(table.userId)],
 );
 
+/**
+ * Tagesverbrauch der KI-Titelvorschläge, ein Zähler je Nutzer und Tag.
+ *
+ * Gehört in die Datenbank, nicht in den Arbeitsspeicher: das Backend läuft als
+ * Serverless Functions, dort lebt kein Prozess lange genug, um mitzuzählen —
+ * jede Anfrage könnte eine andere Instanz treffen.
+ *
+ * Alte Zeilen schaden nicht (eine Zeile pro Nutzer und Tag); wer aufräumen
+ * will, löscht, was älter als ein paar Wochen ist.
+ */
+export const aiUsage = pgTable(
+  'ai_usage',
+  {
+    userId: text('user_id').notNull(),
+    day: date('day').notNull(),
+    count: integer('count').notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.day] })],
+);
+
+export type AiUsage = typeof aiUsage.$inferSelect;
+
 export type Plan = typeof plans.$inferSelect;
 export type NewPlan = typeof plans.$inferInsert;
 

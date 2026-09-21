@@ -3,12 +3,15 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
   Param,
   Post,
   Put,
 } from '@nestjs/common';
 import { PlanService } from './plan.service';
 import { AiService } from '../ai/ai.service';
+import { AiQuotaService } from '../ai/ai-quota.service';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -28,6 +31,7 @@ export class PlanController {
   constructor(
     private readonly planService: PlanService,
     private readonly ai: AiService,
+    private readonly quota: AiQuotaService,
   ) {}
 
   @Get()
@@ -63,17 +67,34 @@ export class PlanController {
    */
   @Post('suggest-title')
   async suggestTitle(
+    @CurrentUserId() userId: string,
     @Body() dto: SuggestTitleDto,
   ): Promise<SuggestTitleResponseDto> {
+    // Erst abbuchen, dann fragen. Andersherum wäre ein Fehlschlag beim Modell
+    // gratis — und damit ein Weg, den Deckel zu umgehen.
+    if (!(await this.quota.consume(userId))) {
+      throw new HttpException(
+        'Daily limit for title suggestions reached',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     return new SuggestTitleResponseDto(
       await this.ai.suggestSectionTitle(dto.text),
     );
   }
 
-  /** Sagt dem Client, ob Vorschläge überhaupt eingerichtet sind. */
+  /**
+   * Sagt dem Client, ob Vorschläge eingerichtet sind und wie viele heute noch
+   * übrig sind. So kann er die Funktion ausblenden, statt sie anzubieten und
+   * dann abzulehnen.
+   */
   @Get('ai/status')
-  aiStatus(): { available: boolean } {
-    return { available: this.ai.available };
+  async aiStatus(
+    @CurrentUserId() userId: string,
+  ): Promise<{ available: boolean; remaining: number; limit: number }> {
+    const { remaining, limit } = await this.quota.state(userId);
+    return { available: this.ai.available, remaining, limit };
   }
 
   // Muss vor den ':id'-Routen stehen, sonst wird 'reorder' als id interpretiert.
