@@ -154,7 +154,9 @@ it('rejects updating a todo with a foreign category', async () => {
     const result = await service.findAll('user_123', 'active');
 
     expect(result).toEqual([openTodo]);
-    expect(repository.findAll).toHaveBeenCalledWith('user_123');
+    expect(repository.findAll).toHaveBeenCalledWith('user_123', {
+      includeArchived: false,
+    });
   });
 
   it('should throw when todo does not exist', async () => {

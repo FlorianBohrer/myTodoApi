@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import type { Filter } from './todo.model';
+import { ArchivedCountDto, SetArchivedDto } from './dto/set-archived.dto';
 import { TodoResponseDto } from './dto/todo-response.dto';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
@@ -30,11 +31,33 @@ export class TodoController {
   async getAllTodos(
     @CurrentUserId() userId: string,
     @Query('filter') filter: Filter,
+    // Archiviertes kommt nur mit, wenn ausdruecklich danach gefragt wird.
+    // Alles andere in der App rechnet mit der Liste ohne Archiv.
+    @Query('archived') archived?: string,
   ): Promise<TodoResponseDto> {
-    const items = await this.todoService.findAll(userId, filter);
+    const items = await this.todoService.findAll(
+      userId,
+      filter,
+      archived === 'true',
+    );
 
     return new TodoResponseDto(
       items.map(toTodoItemResponse),
+    );
+  }
+
+  /**
+   * Alles Erledigte auf einmal weglegen.
+   *
+   * Muss wie 'reorder' VOR den ':id'-Routen stehen, sonst landet
+   * 'archive-completed' als id in updateTodo.
+   */
+  @Post('archive-completed')
+  async archiveCompleted(
+    @CurrentUserId() userId: string,
+  ): Promise<ArchivedCountDto> {
+    return new ArchivedCountDto(
+      await this.todoService.archiveCompleted(userId),
     );
   }
 
@@ -96,6 +119,17 @@ export class TodoController {
       id,
       setCategoriesDto.categoryIds,
     );
+
+    return toTodoItemResponse(todo);
+  }
+
+  @Patch(':id/archive')
+  async setArchived(
+    @CurrentUserId() userId: string,
+    @Param('id') id: string,
+    @Body() dto: SetArchivedDto,
+  ): Promise<TodoItemResponseDto> {
+    const todo = await this.todoService.setArchived(userId, id, dto.archived);
 
     return toTodoItemResponse(todo);
   }

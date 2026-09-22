@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import { DRIZZLE } from '../drizzle/drizzle.module';
 import type { DrizzleDB } from '../drizzle/drizzle.module';
@@ -55,11 +55,21 @@ export class DrizzleTodoRepository implements TodoRepository {
 
   // ---- Lesen ----
 
-  async findAll(userId: string): Promise<TodoWithCategories[]> {
+  async findAll(
+    userId: string,
+    options: { includeArchived?: boolean } = {},
+  ): Promise<TodoWithCategories[]> {
+    // Archivierte bleiben draussen, solange niemand danach fragt. Das ist die
+    // eine Stelle, an der das Archiv wirkt: alles darueber liegende, von der
+    // Wochenansicht bis zur Prozentzahl, rechnet mit dieser Menge.
+    const where = options.includeArchived
+      ? eq(todos.userId, userId)
+      : and(eq(todos.userId, userId), isNull(todos.archivedAt));
+
     const rows = await this.db
       .select()
       .from(todos)
-      .where(eq(todos.userId, userId))
+      .where(where)
       .orderBy(asc(todos.position), asc(todos.createdAt));
 
     const map = await this.loadCategoryIds(rows.map((t) => t.id));
@@ -107,6 +117,79 @@ export class DrizzleTodoRepository implements TodoRepository {
       await this.db
         .insert(todoCategories)
         .values({ todoId: todo.id, categoryId: dto.categoryId })
+        .onConflictDoNothing();
+    }
+
+    return this.withCategories(todo);
+  }
+
+  async setArchived(
+    userId: string,
+    id: string,
+    archived: boolean,
+  ): Promise<TodoWithCategories | null> {
+    const [todo] = await this.db
+      .update(todos)
+      .set({ archivedAt: archived ? new Date() : null })
+      .where(and(eq(todos.id, id), eq(todos.userId, userId)))
+      .returning();
+
+    return todo ? this.withCategories(todo) : null;
+  }
+
+  async archiveCompleted(userId: string): Promise<number> {
+    // Nur was erledigt UND noch nicht weggelegt ist. Ohne die zweite
+    // Bedingung wuerde ein zweiter Klick alle Zeitstempel ueberschreiben und
+    // damit die Information zerstoeren, wann etwas weggeraeumt wurde.
+    const rows = await this.db
+      .update(todos)
+      .set({ archivedAt: new Date() })
+      .where(
+        and(
+          eq(todos.userId, userId),
+          eq(todos.completed, true),
+          isNull(todos.archivedAt),
+        ),
+      )
+      .returning({ id: todos.id });
+
+    return rows.length;
+  }
+
+  async createOccurrence(
+    userId: string,
+    source: TodoWithCategories,
+    scheduledDate: string,
+  ): Promise<TodoWithCategories> {
+    const [todo] = await this.db
+      .insert(todos)
+      .values({
+        userId,
+        title: source.title,
+        categoryId: source.categoryId,
+        scheduledDate,
+        // Direkt hinter das Original, nicht ans Listenende: die Wiederholung
+        // gehoert dorthin, wo die Aufgabe bisher stand.
+        position: source.position,
+        repeatEvery: source.repeatEvery,
+        repeatUnit: source.repeatUnit,
+        repeatFrom: source.repeatFrom,
+        planId: source.planId,
+        isFavorite: source.isFavorite,
+      })
+      .returning();
+
+    // Labels mituebernehmen, sonst verliert die naechste Ausgabe ihre Farbe
+    // und faellt aus jedem Folder-Filter heraus.
+    if (source.categoryIds.length > 0) {
+      await this.db
+        .insert(todoCategories)
+        .values(
+          source.categoryIds.map((categoryId) => ({
+            todoId: todo.id,
+            categoryId,
+          })),
+        )
         .onConflictDoNothing();
     }
 

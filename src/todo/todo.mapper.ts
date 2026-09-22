@@ -15,5 +15,10 @@ export function toTodoItemResponse(
     todo.timerStartedAt,
     todo.timerDurationSeconds,
     todo.scheduledDate,
+    todo.archivedAt,
+    todo.repeatEvery,
+    todo.repeatUnit,
+    todo.repeatFrom,
+    todo.planId,
   );
 }

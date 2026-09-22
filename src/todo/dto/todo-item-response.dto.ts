@@ -12,5 +12,13 @@ export class TodoItemResponseDto {
     public readonly timerDurationSeconds: number | null,
     // Wochenansicht: YYYY-MM-DD oder null (ungeplant).
     public readonly scheduledDate: string | null,
+    // Archiviert: aus der Liste heraus, aber nicht geloescht. null = sichtbar.
+    public readonly archivedAt: Date | null,
+    // Wiederholung: alle drei zusammen oder keins.
+    public readonly repeatEvery: number | null,
+    public readonly repeatUnit: string | null,
+    public readonly repeatFrom: string | null,
+    // Der Plan, aus dem dieses Todo stammt. null = eigenstaendig.
+    public readonly planId: string | null,
   ) {}
 }

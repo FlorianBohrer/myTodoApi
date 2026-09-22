@@ -1,3 +1,4 @@
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
   pgTable,
   uuid,
@@ -35,6 +36,38 @@ export const todos = pgTable(
     // Für die Wochenansicht: reines Datum (YYYY-MM-DD, ohne Uhrzeit/Zeitzone).
     // null = ungeplant (Backlog).
     scheduledDate: date('scheduled_date'),
+
+    /**
+     * Archiviert: aus Liste und Statistik heraus, aber nicht gelöscht.
+     *
+     * Als Zeitpunkt und nicht als Wahrheitswert, weil „wann weggeräumt" eine
+     * Frage ist, die man später stellt, und ein boolean sie nie beantworten
+     * kann. null = steht in der Liste.
+     */
+    archivedAt: timestamp('archived_at'),
+
+    /**
+     * Wiederholung. Alle drei Felder zusammen oder keins.
+     *
+     * repeatFrom ist der Teil, den die meisten Apps auslassen: „jeden Montag"
+     * (due) und „drei Tage nachdem ich es zuletzt gemacht habe" (completion)
+     * sind verschiedene Dinge. Für Termine stimmt das Erste, für Hausarbeit
+     * fast immer das Zweite.
+     */
+    repeatEvery: integer('repeat_every'),
+    repeatUnit: text('repeat_unit'), // 'day' | 'week' | 'month'
+    repeatFrom: text('repeat_from'), // 'due' | 'completion'
+
+    /**
+     * Der Plan, aus dem dieses Todo stammt. null = eigenständig.
+     *
+     * set null und nicht cascade: verschwindet der Plan, bleibt die Aufgabe.
+     * Sie ist dann eben eine ohne Herkunft, aber keine, die stillschweigend
+     * mitgelöscht wird.
+     */
+    planId: uuid('plan_id').references((): AnyPgColumn => plans.id, {
+      onDelete: 'set null',
+    }),
 
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },

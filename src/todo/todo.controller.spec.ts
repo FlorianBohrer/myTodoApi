@@ -63,7 +63,9 @@ it('should list all todos', async () => {
 expect(result.todo[0]).not.toHaveProperty('userId');
 expect(result.todo[0]).not.toHaveProperty('position');
   expect(result.total).toBe(1);
-  expect(todoService.findAll).toHaveBeenCalledWith('test_user', 'all');
+  // Das dritte Argument ist die Archivfrage: ohne ?archived=true bleibt
+  // Weggelegtes draussen, und darauf verlaesst sich die ganze App.
+  expect(todoService.findAll).toHaveBeenCalledWith('test_user', 'all', false);
 });
 
 it('should return todo by id without internal fields', async () => {
