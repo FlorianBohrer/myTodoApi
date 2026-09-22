@@ -107,6 +107,7 @@ describe('TodoService, wiederkehrende Aufgaben', () => {
       completed: true,
     });
 
-    expect(result.completed).toBe(true);
+    expect(result.todo.completed).toBe(true);
+    expect(result.nextOccurrence).toBeNull();
   });
 });

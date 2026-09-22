@@ -1,3 +1,11 @@
+export class NextOccurrenceDto {
+  constructor(
+    public readonly id: string,
+    /** YYYY-MM-DD */
+    public readonly scheduledDate: string | null,
+  ) {}
+}
+
 export class TodoItemResponseDto {
   constructor(
     public readonly id: string,
@@ -20,5 +28,17 @@ export class TodoItemResponseDto {
     public readonly repeatFrom: string | null,
     // Der Plan, aus dem dieses Todo stammt. null = eigenstaendig.
     public readonly planId: string | null,
+    /**
+     * Die naechste Ausgabe, falls beim Abhaken eine entstanden ist.
+     *
+     * Steht ausdruecklich hier, damit der Client es nicht aus dem
+     * geaenderten Todo ableiten muss.
+     *
+     * Ohne Vorgabewert, also beim Lesen einer Liste gar nicht erst im JSON.
+     * Mit `= null` traege jede der 204 Zeilen ein Feld mit, das dort nie
+     * etwas zu melden hat. Gesetzt wird es nur dort, wo wirklich etwas
+     * entstanden sein kann: beim PUT.
+     */
+    public readonly nextOccurrence?: NextOccurrenceDto | null,
   ) {}
 }

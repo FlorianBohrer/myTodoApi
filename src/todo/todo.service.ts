@@ -72,11 +72,22 @@ async createTodo(
     return this.repository.reorder(userId, ids);
   }
 
+/**
+ * Aendert ein Todo und sagt, ob dabei eine naechste Ausgabe entstanden ist.
+ *
+ * Das steht ausdruecklich in der Antwort und wird nicht mehr abgeleitet. Vorher
+ * musste der Client aus dem geaenderten Todo schliessen, ob der Server nebenbei
+ * etwas angelegt hat — eine Vermutung ueber fremde Arbeit, die genau dann
+ * falsch ist, wenn man sie am wenigsten bemerkt.
+ */
  async updateTodo(
   userId: string,
   id: string,
   dto: UpdateTodoDto,
-): Promise<TodoWithCategories> {
+): Promise<{
+  todo: TodoWithCategories;
+  nextOccurrence: TodoWithCategories | null;
+}> {
   await this.assertCategoryOwnership(
     userId,
     dto.categoryId,
@@ -101,11 +112,12 @@ async createTodo(
     throw new NotFoundException('Todo not found');
   }
 
-  if (before && !before.completed && todo.completed) {
-    await this.spawnNextOccurrence(userId, todo);
-  }
+  const nextOccurrence =
+    before && !before.completed && todo.completed
+      ? await this.spawnNextOccurrence(userId, todo)
+      : null;
 
-  return todo;
+  return { todo, nextOccurrence };
 }
 
 /**
@@ -147,15 +159,16 @@ async archiveCompleted(userId: string): Promise<number> {
 private async spawnNextOccurrence(
   userId: string,
   completed: TodoWithCategories,
-): Promise<void> {
+): Promise<TodoWithCategories | null> {
   const rule = parseRepeat(completed);
-  if (!rule) return;
+  if (!rule) return null;
 
   try {
     const next = nextOccurrence(rule, completed.scheduledDate, todayISO());
-    await this.repository.createOccurrence(userId, completed, next);
+    return await this.repository.createOccurrence(userId, completed, next);
   } catch (error) {
     this.logger.error('Naechste Ausgabe konnte nicht angelegt werden', error as Error);
+    return null;
   }
 }
 

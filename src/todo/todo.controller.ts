@@ -20,6 +20,7 @@ import { ReorderTodosDto } from './dto/reorder-todos.dto';
 import { SetTimerDto } from './dto/set-timer.dto';
 import { SetCategoriesDto } from './dto/set-categories.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
+import { NextOccurrenceDto } from './dto/todo-item-response.dto';
 import { TodoItemResponseDto } from './dto/todo-item-response.dto';
 import { toTodoItemResponse } from './todo.mapper';
 
@@ -99,13 +100,18 @@ export class TodoController {
     @Param('id') id: string,
     @Body() updateTodoDto: UpdateTodoDto,
   ): Promise<TodoItemResponseDto> {
-    const todo = await this.todoService.updateTodo(
+    const { todo, nextOccurrence } = await this.todoService.updateTodo(
       userId,
       id,
       updateTodoDto,
     );
 
-  return toTodoItemResponse(todo);
+    return {
+      ...toTodoItemResponse(todo),
+      nextOccurrence: nextOccurrence
+        ? new NextOccurrenceDto(nextOccurrence.id, nextOccurrence.scheduledDate)
+        : null,
+    };
 }
 
   @Put(':id/categories')
