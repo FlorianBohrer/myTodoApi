@@ -47,6 +47,41 @@ export const todos = pgTable(
     archivedAt: timestamp('archived_at'),
 
     /**
+     * WANN erledigt wurde — nicht nur DASS.
+     *
+     * `completed` sagt den Zustand, und daraus war bisher keine zeitliche
+     * Aussage zu gewinnen: „diese Woche geschafft" musste über
+     * scheduled_date rechnen, also über den GEPLANTEN Tag statt über den
+     * Tag der Erledigung. Das ist bei allem, was verschoben wurde, die
+     * falsche Zahl, und niemand sieht ihr an, dass sie falsch ist.
+     *
+     * Gesetzt wird der Wert beim Übergang auf erledigt und nur dort: ein
+     * zweites PUT mit completed:true darf den ersten Zeitpunkt nicht
+     * überschreiben (siehe coalesce in der Repository-Schicht). Beim
+     * Entfernen des Hakens fällt er auf null zurück, weil es dann keine
+     * Erledigung gibt, über die man reden könnte.
+     *
+     * null heißt: offen — oder in einer Zeile aus der Zeit vor dieser
+     * Spalte. Beides ist dasselbe „wir wissen es nicht", und die Oberfläche
+     * sagt das auch so, statt eine Zahl zu zeigen.
+     */
+    completedAt: timestamp('completed_at'),
+
+    /**
+     * Welcher Reihe von Wiederholungen diese Ausgabe angehört.
+     *
+     * Beim Abhaken entsteht eine NEUE Zeile für den nächsten Termin, und
+     * bisher verband nichts die beiden. Eine Trefferquote („sechs der
+     * letzten acht Termine") braucht aber genau diese Verbindung; ohne sie
+     * bliebe nur das Raten über gleiche Titel.
+     *
+     * null heißt „eigene Reihe": der Schlüssel ist dann die eigene id.
+     * Deshalb braucht keine bestehende Zeile einen Wert, und eine Aufgabe
+     * ohne Wiederholung trägt hier nie etwas ein.
+     */
+    seriesId: uuid('series_id'),
+
+    /**
      * Wiederholung. Alle drei Felder zusammen oder keins.
      *
      * repeatFrom ist der Teil, den die meisten Apps auslassen: „jeden Montag"

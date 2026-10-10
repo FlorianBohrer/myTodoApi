@@ -20,5 +20,7 @@ export function toTodoItemResponse(
     todo.repeatUnit,
     todo.repeatFrom,
     todo.planId,
+    todo.completedAt,
+    todo.seriesId,
   );
 }

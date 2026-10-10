@@ -29,6 +29,21 @@ export class TodoItemResponseDto {
     // Der Plan, aus dem dieses Todo stammt. null = eigenstaendig.
     public readonly planId: string | null,
     /**
+     * Wann erledigt wurde. null = offen, ODER aus der Zeit vor dieser Spalte.
+     *
+     * Beides ist dasselbe "wir wissen es nicht", und der Client behandelt es
+     * auch so: er bilanziert keine Woche, von der er die Erledigungszeiten
+     * nicht hat, sondern sagt, dass er sie nicht hat.
+     */
+    public readonly completedAt: Date | null,
+    /**
+     * Welcher Reihe von Wiederholungen diese Ausgabe angehoert.
+     *
+     * null = eigene Reihe; der Schluessel ist dann die eigene id. Deshalb
+     * braucht keine bestehende Zeile einen Wert.
+     */
+    public readonly seriesId: string | null,
+    /**
      * Die naechste Ausgabe, falls beim Abhaken eine entstanden ist.
      *
      * Steht ausdruecklich hier, damit der Client es nicht aus dem
