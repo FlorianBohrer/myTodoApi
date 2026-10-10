@@ -176,6 +176,13 @@ export class DrizzleTodoRepository implements TodoRepository {
         repeatFrom: source.repeatFrom,
         planId: source.planId,
         isFavorite: source.isFavorite,
+        // Die Reihe weitergeben, damit die Ausgaben verbunden bleiben.
+        //
+        // `?? source.id`: die erste Ausgabe einer Reihe traegt selbst nichts
+        // ein — ihr Schluessel IST ihre id. Dadurch braucht keine bestehende
+        // Zeile einen Wert, und die Reihe hat trotzdem von Anfang an einen
+        // gemeinsamen Schluessel.
+        seriesId: source.seriesId ?? source.id,
       })
       .returning();
 
@@ -201,9 +208,27 @@ export class DrizzleTodoRepository implements TodoRepository {
     id: string,
     dto: UpdateTodoDto,
   ): Promise<TodoWithCategories | null> {
+    // Wann erledigt wurde, gehoert nicht dem Client. Er darf sagen, DASS
+    // etwas erledigt ist; den Zeitpunkt setzt der Server, sonst haengt eine
+    // Zahl, die spaeter als Messung gelesen wird, an einer fremden Uhr.
+    //
+    // coalesce statt now(): ein zweites PUT mit completed:true darf den
+    // ersten Zeitpunkt nicht ueberschreiben. Das in einer Anweisung zu
+    // loesen statt mit Lesen-dann-Schreiben ist nicht nur kuerzer — zwischen
+    // zwei Anweisungen liegt ein Moment, in dem ein zweiter Request genau
+    // das tun koennte.
+    const values: Record<string, unknown> = { ...dto };
+
+    if (dto.completed === true) {
+      values.completedAt = sql`coalesce(${todos.completedAt}, now())`;
+    } else if (dto.completed === false) {
+      // Kein Haken, keine Erledigung, ueber die man reden koennte.
+      values.completedAt = null;
+    }
+
     const [todo] = await this.db
       .update(todos)
-      .set(dto)
+      .set(values)
       .where(and(eq(todos.id, id), eq(todos.userId, userId)))
       .returning();
 

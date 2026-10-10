@@ -29,10 +29,24 @@ function todo(over: Partial<TodoWithCategories> = {}): TodoWithCategories {
     repeatUnit: 'week',
     repeatFrom: 'due',
     planId: null,
+    completedAt: null,
+    seriesId: null,
     createdAt: new Date('2026-09-01T00:00:00Z'),
     ...over,
   };
 }
+
+/**
+ * Der Tag, an dem dieser Test spielt.
+ *
+ * Vorher las der Test die echte Uhr: scheduledDate stand fest auf dem
+ * 21.09., erwartet wurde der 28.09. — und `nextOccurrence` schiebt bei
+ * 'due' so lange weiter, bis der Termin in der ZUKUNFT liegt. Ab dem
+ * 28.09.2026 war die Erwartung damit falsch, ohne dass sich eine Zeile Code
+ * geaendert hatte. Ein Test, der an einem Dienstag umkippt, prueft nicht die
+ * Regel, sondern das Datum des Testlaufs.
+ */
+const TEST_TODAY = new Date('2026-09-22T12:00:00Z');
 
 describe('TodoService, wiederkehrende Aufgaben', () => {
   let service: TodoService;
@@ -53,6 +67,24 @@ describe('TodoService, wiederkehrende Aufgaben', () => {
     }).compile();
 
     service = module.get(TodoService);
+
+    // Nur die Uhr festhalten, nicht die Zeitsteuerung: der Dienst wartet auf
+    // Promises, und gefaelschte Timer wuerden dabei im Weg stehen.
+    jest.useFakeTimers({
+      now: TEST_TODAY,
+      doNotFake: [
+        'nextTick',
+        'setImmediate',
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+      ],
+    });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('legt die naechste Ausgabe an, wenn abgehakt wird', async () => {
