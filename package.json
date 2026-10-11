@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "vercel-build": "node scripts/migrate-on-deploy.mjs && npm run build",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
