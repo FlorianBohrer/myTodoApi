@@ -1,7 +1,22 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { SuggestionResult } from '../plan/dto/suggest-title.dto';
+import type {
+  TranslateKind,
+  TranslateTarget,
+  TranslationResult,
+} from '../plan/dto/translate.dto';
+import {
+  TRANSLATIONS_SCHEMA,
+  readTranslations,
+  translateSystemPrompt,
+  translateUserMessage,
+} from './translate';
 
 /** Länge, ab der ein Titel abgeschnitten wird — er soll in eine Lasche passen. */
 export const MAX_TITLE_LENGTH = 48;
@@ -61,7 +76,8 @@ function describe(error: unknown): string {
         ? 'the API key was rejected'
         : error.status === 429
           ? 'the API rate limit was hit'
-          : error.status === 400 && /credit|balance|billing/i.test(error.message)
+          : error.status === 400 &&
+              /credit|balance|billing/i.test(error.message)
             ? 'the Anthropic account has no credit'
             : error.name;
     return `Anthropic API ${error.status}: ${kind}`;
@@ -150,4 +166,76 @@ export class AiService {
     }
   }
 
+  /**
+   * Übersetzt die Texte eines Plans ins Deutsche oder Englische — alle in
+   * einem Aufruf, damit das Modell den Zusammenhang sieht (ein „Ziel" in der
+   * Überschrift ist dasselbe Wort wie im Absatz darunter).
+   *
+   * Strukturierte Ausgabe statt freiem Text: eine Liste in derselben
+   * Reihenfolge, deren Länge geprüft wird (readTranslations). Wie beim
+   * Titelvorschlag gilt: ein Fehlschlag kommt als Grund zurück, nicht als
+   * Ausnahme — der Editor zeigt ihn an und behält den Text, wie er war.
+   */
+  async translate(
+    items: readonly { text: string; kind: TranslateKind }[],
+    target: TranslateTarget,
+  ): Promise<TranslationResult> {
+    // Nichts zu übersetzen: leere Felder kommen leer zurück, ohne Aufruf.
+    if (items.every((item) => !item.text.trim())) {
+      return { translations: items.map((item) => item.text) };
+    }
+
+    try {
+      const response = await this.getClient().beta.messages.create({
+        model: 'claude-opus-5-5',
+        max_tokens: 16000,
+        // Übersetzen braucht Sorgfalt, aber kein langes Nachdenken; niedriger
+        // Aufwand hält die Wartezeit für ein ganzes Dokument kurz.
+        output_config: {
+          effort: 'low',
+          format: { type: 'json_schema', schema: TRANSLATIONS_SCHEMA },
+        },
+        // Lehnt ein Klassifikator ab, übernimmt serverseitig ein anderes
+        // Modell, statt dass der Nutzer ohne Übersetzung dasteht.
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default',
+        system: translateSystemPrompt(target),
+        messages: [{ role: 'user', content: translateUserMessage(items) }],
+      });
+
+      if (response.stop_reason === 'refusal') {
+        this.logger.warn(
+          `Übersetzung abgelehnt: ${response.stop_details?.category ?? 'unbekannt'}`,
+        );
+        return {
+          translations: null,
+          error: 'The model declined to translate this plan',
+        };
+      }
+      if (response.stop_reason === 'max_tokens') {
+        return {
+          translations: null,
+          error: 'The plan is too long to translate in one go',
+        };
+      }
+
+      const raw = response.content
+        .filter((block) => block.type === 'text')
+        .map((block) => block.text)
+        .join('');
+
+      const translations = readTranslations(raw, items.length);
+      if (!translations) {
+        this.logger.warn('Übersetzung mit falscher Form verworfen');
+        return {
+          translations: null,
+          error: 'The translation came back incomplete',
+        };
+      }
+      return { translations };
+    } catch (error) {
+      this.logger.error('Übersetzung fehlgeschlagen', error as Error);
+      return { translations: null, error: describe(error) };
+    }
+  }
 }
