@@ -22,11 +22,6 @@ import {
   SuggestTitleResponseDto,
 } from './dto/suggest-title.dto';
 import {
-  MAX_TRANSLATE_CHARS,
-  TranslateDto,
-  TranslateResponseDto,
-} from './dto/translate.dto';
-import {
   PlanListResponseDto,
   PlanResponseDto,
   toPlanResponse,
@@ -41,7 +36,9 @@ export class PlanController {
   ) {}
 
   @Get()
-  async getAll(@CurrentUserId() userId: string): Promise<PlanListResponseDto> {
+  async getAll(
+    @CurrentUserId() userId: string,
+  ): Promise<PlanListResponseDto> {
     const plans = await this.planService.findAll(userId);
     return new PlanListResponseDto(plans.map(toPlanResponse));
   }
@@ -89,47 +86,6 @@ export class PlanController {
   }
 
   /**
-   * Die Texte eines Plans übersetzen (Deutsch ⇄ Englisch).
-   *
-   * Zählt aus demselben Tageskontingent wie die Titelvorschläge — beides
-   * kostet Geld, und ein Deckel pro Funktion wäre einer, den man durch
-   * Abwechseln umgeht. Eine Anfrage, eine Einheit; größere Dokumente teilt
-   * der Client in mehrere Anfragen auf (MAX_TRANSLATE_CHARS).
-   */
-  @Post('translate')
-  async translate(
-    @CurrentUserId() userId: string,
-    @Body() dto: TranslateDto,
-  ): Promise<TranslateResponseDto> {
-    const chars = dto.items.reduce((sum, item) => sum + item.text.length, 0);
-    if (chars > MAX_TRANSLATE_CHARS) {
-      throw new HttpException(
-        `At most ${MAX_TRANSLATE_CHARS} characters per request`,
-        HttpStatus.PAYLOAD_TOO_LARGE,
-      );
-    }
-
-    if (!this.ai.available) {
-      throw new HttpException(
-        'Translation is not configured on this server',
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-
-    // Erst abbuchen, dann fragen — wie bei den Titeln.
-    if (!(await this.quota.consume(userId))) {
-      throw new HttpException(
-        'Daily AI limit reached',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    return new TranslateResponseDto(
-      await this.ai.translate(dto.items, dto.target),
-    );
-  }
-
-  /**
    * Sagt dem Client, ob Vorschläge eingerichtet sind und wie viele heute noch
    * übrig sind. So kann er die Funktion ausblenden, statt sie anzubieten und
    * dann abzulehnen.
@@ -146,12 +102,7 @@ export class PlanController {
     }
 
     if (!this.ai.available) {
-      return {
-        available: false,
-        remaining: quota.remaining,
-        limit: quota.limit,
-        reason: 'no-key',
-      };
+      return { available: false, remaining: quota.remaining, limit: quota.limit, reason: 'no-key' };
     }
 
     return {
