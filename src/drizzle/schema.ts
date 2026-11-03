@@ -247,6 +247,9 @@ export const plans = pgTable(
 /**
  * Tagesverbrauch der KI-Titelvorschläge, ein Zähler je Nutzer und Tag.
  *
+ * Nicht mehr benutzt: die KI-Anbindung ist entfernt. Die Tabelle bleibt
+ * stehen, weil sie zu löschen eine Migration bräuchte; sie kostet nichts.
+ *
  * Gehört in die Datenbank, nicht in den Arbeitsspeicher: das Backend läuft als
  * Serverless Functions, dort lebt kein Prozess lange genug, um mitzuzählen —
  * jede Anfrage könnte eine andere Instanz treffen.
